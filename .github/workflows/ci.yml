@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create test env file
+        run: cp .env.example .env
+
+      - name: Build and start the stack
+        run: docker compose up -d --build
+
+      - name: Wait for services to be ready
+        run: |
+          for port in 3000 3001 3002; do
+            for i in $(seq 1 30); do
+              if curl -fs "http://localhost:${port}/ready" > /dev/null; then
+                echo "port ${port} is ready"; break
+              fi
+              if [ "$i" -eq 30 ]; then
+                echo "port ${port} never became ready"; exit 1
+              fi
+              sleep 2
+            done
+          done
+
+      - name: Run integration tests
+        run: bash test-all.sh
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
