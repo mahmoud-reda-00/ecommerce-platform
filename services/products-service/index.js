@@ -63,6 +63,21 @@ app.get('/products', async (req, res) => {
   }
 });
 
+app.get('/products/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({ error: 'id must be a positive integer' });
+  }
+  try {
+    const { rows } = await pool.query('SELECT id, name, price FROM products WHERE id = $1', [id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'product not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: 'internal error' });
+  }
+});
+
 app.post('/products', async (req, res) => {
   const { name, price } = req.body;
   if (!name || typeof price !== 'number' || price < 0) {
