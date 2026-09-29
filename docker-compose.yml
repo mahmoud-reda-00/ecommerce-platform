@@ -70,4 +70,4 @@ services:
 
 volumes:
   ecommerce-pgdata:
-    external: true   # نفس الـ volume اللي عندك أصلاً، مش هيتحذف
+     name: ecommerce-pgdata
