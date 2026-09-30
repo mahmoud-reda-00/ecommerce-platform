@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: products-service
+  namespace: ecommerce
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: products-service
+  template:
+    metadata:
+      labels:
+        app: products-service
+    spec:
+      containers:
+        - name: products-service
+          image: mv7moud/ecommerce-products-service:52907d4f9dd61cb5ddec29f5f58db89fcb9f3a54
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: products_db
+            - name: DB_USER
+              value: products_user
+            - name: DB_PASSWORD
+              value: products_pass
+            - name: PORT
+              value: "3000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: products-service
+  namespace: ecommerce
+spec:
+  selector:
+    app: products-service
+  ports:
+    - port: 3000
+      targetPort: 3000
