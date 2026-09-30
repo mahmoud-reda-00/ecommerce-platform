@@ -17,6 +17,18 @@ data:
     REVOKE CONNECT ON DATABASE orders_db   FROM PUBLIC;
     REVOKE CONNECT ON DATABASE users_db    FROM PUBLIC;
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: ecommerce
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,6 +36,8 @@ metadata:
   namespace: ecommerce
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: postgres
@@ -40,13 +54,20 @@ spec:
           env:
             - name: POSTGRES_PASSWORD
               value: admin_pass
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           volumeMounts:
             - name: init
               mountPath: /docker-entrypoint-initdb.d
+            - name: data
+              mountPath: /var/lib/postgresql/data
       volumes:
         - name: init
           configMap:
             name: postgres-init
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-data
 ---
 apiVersion: v1
 kind: Service
