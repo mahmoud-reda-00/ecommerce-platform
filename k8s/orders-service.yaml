@@ -26,7 +26,10 @@ spec:
             - name: DB_USER
               value: orders_user
             - name: DB_PASSWORD
-              value: orders_pass
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: ORDERS_DB_PASSWORD
             - name: PRODUCTS_SERVICE_URL
               value: http://products-service:3000
             - name: USERS_SERVICE_URL

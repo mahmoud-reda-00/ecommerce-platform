@@ -4,18 +4,23 @@ metadata:
   name: postgres-init
   namespace: ecommerce
 data:
-  init.sql: |
-    CREATE USER products_user WITH PASSWORD 'products_pass';
-    CREATE USER orders_user   WITH PASSWORD 'orders_pass';
-    CREATE USER users_user    WITH PASSWORD 'users_pass';
+  init.sh: |
+    #!/bin/bash
+    set -e
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<EOSQL
+      CREATE USER products_user WITH PASSWORD '${PRODUCTS_DB_PASSWORD}';
+      CREATE USER orders_user WITH PASSWORD '${ORDERS_DB_PASSWORD}';
+      CREATE USER users_user WITH PASSWORD '${USERS_DB_PASSWORD}';
 
-    CREATE DATABASE products_db OWNER products_user;
-    CREATE DATABASE orders_db   OWNER orders_user;
-    CREATE DATABASE users_db    OWNER users_user;
+      CREATE DATABASE products_db OWNER products_user;
+      CREATE DATABASE orders_db OWNER orders_user;
+      CREATE DATABASE users_db OWNER users_user;
 
-    REVOKE CONNECT ON DATABASE products_db FROM PUBLIC;
-    REVOKE CONNECT ON DATABASE orders_db   FROM PUBLIC;
-    REVOKE CONNECT ON DATABASE users_db    FROM PUBLIC;
+      REVOKE CONNECT ON DATABASE products_db FROM PUBLIC;
+      REVOKE CONNECT ON DATABASE orders_db FROM PUBLIC;
+      REVOKE CONNECT ON DATABASE users_db FROM PUBLIC;
+    EOSQL
+
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -28,6 +33,7 @@ spec:
   resources:
     requests:
       storage: 1Gi
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -53,14 +59,33 @@ spec:
             - containerPort: 5432
           env:
             - name: POSTGRES_PASSWORD
-              value: admin_pass
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: POSTGRES_PASSWORD
+            - name: PRODUCTS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: PRODUCTS_DB_PASSWORD
+            - name: ORDERS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: ORDERS_DB_PASSWORD
+            - name: USERS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: USERS_DB_PASSWORD
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           volumeMounts:
-            - name: init
-              mountPath: /docker-entrypoint-initdb.d
             - name: data
               mountPath: /var/lib/postgresql/data
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d/init.sh
+              subPath: init.sh
       volumes:
         - name: init
           configMap:
@@ -68,6 +93,7 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: postgres-data
+
 ---
 apiVersion: v1
 kind: Service
