@@ -18,6 +18,21 @@ spec:
           image: mv7moud/ecommerce-products-service:52907d4f9dd61cb5ddec29f5f58db89fcb9f3a54
           ports:
             - containerPort: 3000
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
           env:
             - name: DB_HOST
               value: postgres
@@ -34,6 +49,7 @@ spec:
                   key: PRODUCTS_DB_PASSWORD
             - name: PORT
               value: "3000"
+
 ---
 apiVersion: v1
 kind: Service
