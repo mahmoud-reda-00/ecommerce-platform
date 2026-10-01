@@ -1,0 +1,13 @@
+name: orders-service
+image:
+  repository: mv7moud/ecommerce-orders-service
+  tag: 52907d4f9dd61cb5ddec29f5f58db89fcb9f3a54
+db:
+  name: orders_db
+  user: orders_user
+  passwordKey: ORDERS_DB_PASSWORD
+extraEnv:
+  - name: PRODUCTS_SERVICE_URL
+    value: http://products-service:3000
+  - name: USERS_SERVICE_URL
+    value: http://users-service:3000
