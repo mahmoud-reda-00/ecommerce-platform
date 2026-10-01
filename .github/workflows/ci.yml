@@ -1,3 +1,4 @@
+```yaml
 name: Ecommerce Platform CI
 
 on:
@@ -13,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6.1.0
@@ -20,7 +24,7 @@ jobs:
       - name: Build and start the stack
         run: docker compose up -d --build
 
-      - name: containers list
+      - name: Containers list
         run: docker compose ps
 
       - name: Wait for services
@@ -28,11 +32,15 @@ jobs:
           for port in 3000 3001 3002; do
             for i in $(seq 1 30); do
               if curl -fs "http://localhost:${port}/ready" > /dev/null; then
-                echo "port ${port} is ready"; break
+                echo "port ${port} is ready"
+                break
               fi
+
               if [ "$i" -eq 30 ]; then
-                echo "port ${port} never became ready"; exit 1
+                echo "port ${port} never became ready"
+                exit 1
               fi
+
               sleep 2
             done
           done
@@ -59,6 +67,32 @@ jobs:
         if: github.event_name == 'push'
         run: |
           for svc in products-service users-service orders-service; do
-            docker build -t ${{ secrets.DOCKER_USERNAME }}/ecommerce-$svc:${{ github.sha }} ./services/$svc
-            docker push ${{ secrets.DOCKER_USERNAME }}/ecommerce-$svc:${{ github.sha }}
+            docker build \
+              -t ${{ secrets.DOCKER_USERNAME }}/ecommerce-$svc:${{ github.sha }} \
+              ./services/$svc
+
+            docker push \
+              ${{ secrets.DOCKER_USERNAME }}/ecommerce-$svc:${{ github.sha }}
           done
+
+      - name: Update image tags in Helm values
+        if: github.event_name == 'push'
+        run: |
+          for name in products users orders; do
+            sed -i "s|^  tag: .*|  tag: \"${{ github.sha }}\"|" helm/values/$name.yaml
+          done
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add helm/values
+
+          if git diff --cached --quiet; then
+            echo "No tag changes"
+            exit 0
+          fi
+
+          git commit -m "ci: update image tags to ${{ github.sha }}"
+
+          git push origin HEAD:main
+```
