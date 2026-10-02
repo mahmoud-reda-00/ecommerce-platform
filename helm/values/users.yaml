@@ -1,7 +1,7 @@
 name: users-service
 image:
   repository: mv7moud/ecommerce-users-service
-  tag: "f3525cbd11c8098eb99c48ffda7085cfc3e53207"
+  tag: "a81b9ee0164f059348c37daec76d2f5cc6799c9e"
 db:
   name: users_db
   user: users_user
