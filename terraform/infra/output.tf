@@ -9,3 +9,6 @@ output "private_subnets" {
 output "public_subnets" {
   value = module.vpc.public_subnets
 }
+output "cluster_name" {
+  value = module.eks.cluster_name
+}
