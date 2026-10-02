@@ -1,7 +1,7 @@
 name: orders-service
 image:
   repository: mv7moud/ecommerce-orders-service
-  tag: "a81b9ee0164f059348c37daec76d2f5cc6799c9e"
+  tag: "90bf43f6d9cba9d3c275557843c861647a938b9c"
 db:
   name: orders_db
   user: orders_user
